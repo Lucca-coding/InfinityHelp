@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  >
+  <title>InfinityHelp</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main>
+    <div class="brand">
+      <img
+        src="assets/infinityhelp-logo.png"
+        alt="InfinityHelp"
+      >
+      <span>v0.2.8.4</span>
+    </div>
+
+    <label class="setting">
+      <div>
+        <strong>Ativar painel</strong>
+        <span>
+          Exibe a InfinityHelp dentro do jogo.
+        </span>
+      </div>
+
+      <input id="enabled" type="checkbox">
+    </label>
+
+    <label class="setting">
+      <div>
+        <strong>Modo diagnóstico</strong>
+        <span>
+          Mostra os dados locais reconhecidos.
+        </span>
+      </div>
+
+      <input id="diagnostic" type="checkbox">
+    </label>
+
+    <button id="resetSize" class="reset" type="button">
+      Restaurar tamanho e posição
+    </button>
+
+    <p class="note">
+      Arraste o cabeçalho para mover e o canto inferior
+      direito para redimensionar. Os dados permanecem no
+      seu navegador.
+    </p>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>
