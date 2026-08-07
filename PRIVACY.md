@@ -12,7 +12,7 @@ Preferências de interface, cache necessário ao funcionamento e estado do conta
 
 ## Compartilhamento
 
-A versão v0.2.8.21 não adiciona telemetria, publicidade, rastreamento nem envio de dados para servidores próprios ou terceiros.
+A versão v0.2.8.23 não adiciona telemetria, publicidade, rastreamento nem envio de dados para servidores próprios ou terceiros.
 
 ## Permissões
 

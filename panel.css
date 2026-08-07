@@ -692,20 +692,66 @@
   letter-spacing: .35px;
 }
 
-#infinity-help-panel .ih-nature-arrow {
-  font-size: 16px;
-  font-weight: 900;
-  line-height: 1;
+#infinity-help-panel .ih-iv-card.ih-nature-card-up {
+  border-color: rgba(71, 225, 146, .62);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(28, 92, 67, .94),
+      rgba(10, 47, 38, .96)
+    );
+
+  box-shadow:
+    0 0 0 1px rgba(79, 236, 157, .08) inset,
+    0 7px 16px rgba(0, 0, 0, .10);
 }
 
-#infinity-help-panel .ih-nature-up {
-  color: #62e7a2;
-  text-shadow: 0 0 8px rgba(77, 226, 148, .34);
+#infinity-help-panel .ih-iv-card.ih-nature-card-down {
+  border-color: rgba(255, 95, 125, .62);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(104, 35, 55, .95),
+      rgba(53, 17, 31, .97)
+    );
+
+  box-shadow:
+    0 0 0 1px rgba(255, 112, 141, .08) inset,
+    0 7px 16px rgba(0, 0, 0, .10);
 }
 
-#infinity-help-panel .ih-nature-down {
-  color: #ff718f;
-  text-shadow: 0 0 8px rgba(255, 83, 121, .3);
+#infinity-help-panel
+.ih-iv-card.ih-nature-card-up
+.ih-iv-card-name,
+#infinity-help-panel
+.ih-iv-card.ih-nature-card-up
+.ih-iv-card-current {
+  color: #a8f3cd;
+}
+
+#infinity-help-panel
+.ih-iv-card.ih-nature-card-down
+.ih-iv-card-name,
+#infinity-help-panel
+.ih-iv-card.ih-nature-card-down
+.ih-iv-card-current {
+  color: #ffb2c1;
+}
+
+#infinity-help-panel
+.ih-iv-card.ih-nature-card-up
+.ih-iv-card-main strong {
+  color: #79efb4 !important;
+  text-shadow: none;
+}
+
+#infinity-help-panel
+.ih-iv-card.ih-nature-card-down
+.ih-iv-card-main strong {
+  color: #ff839c !important;
+  text-shadow: none;
 }
 
 #infinity-help-panel .ih-iv-perfect {
@@ -1725,4 +1771,49 @@ tbody tr:last-child th {
 .ih-ko-active span::before {
   content: 'EM CAMPO · ';
   color: #72e7ff;
+}
+
+
+/* Mobile/low-power rendering profile. Keeps the same information while
+   avoiding expensive blur, animated glows and large GPU shadows. */
+@media (max-width: 760px), (pointer: coarse) {
+  #infinity-help-panel {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+
+    box-shadow:
+      0 10px 28px rgba(0, 0, 0, .38),
+      0 0 0 1px rgba(123, 32, 255, .04) inset;
+  }
+
+  #infinity-help-panel
+  .ih-event-countdown.ih-event-now,
+  #infinity-help-panel .ih-shiny-alert,
+  #infinity-help-panel .ih-idle-orb {
+    animation: none;
+  }
+
+  #infinity-help-panel .ih-shiny-alert::after {
+    display: none;
+  }
+
+  #infinity-help-panel .ih-shiny-alert-icon,
+  #infinity-help-panel .ih-shiny-alert-star,
+  #infinity-help-panel .ih-idle-logo {
+    filter: none;
+  }
+
+  #infinity-help-panel .ih-card,
+  #infinity-help-panel .ih-iv-card,
+  #infinity-help-panel .ih-event-countdown,
+  #infinity-help-panel .ih-shiny-alert {
+    box-shadow: none;
+  }
+
+  #infinity-help-panel
+  .ih-iv-card.ih-nature-card-up,
+  #infinity-help-panel
+  .ih-iv-card.ih-nature-card-down {
+    box-shadow: none;
+  }
 }

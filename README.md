@@ -1,90 +1,93 @@
-# InfinityHelp — v0.2.8.21 BETA DE TESTE
+# InfinityHelp v0.2.8.23 — BETA DE TESTE
 
-Extensão de navegador para auxiliar jogadores do Infinity MMO com informações de batalha e captura organizadas em um painel local.
+Código-fonte público para revisão técnica e transparência. Esta versão é a mesma base da extensão BETA distribuída para testes.
 
-> **Status:** versão beta de teste. A versão estável continua sendo a v0.2.6.1 até a conclusão dos testes.
+A extensão trabalha com dados já carregados pelo Infinity MMO e não inclui bot, macro ou automação de ações do jogador.
 
-## Objetivo deste repositório
+## Alterações desta beta
 
-Este repositório publica o código-fonte da versão beta para revisão técnica e transparência. A comunidade pode verificar as permissões utilizadas, o funcionamento da extensão e a ausência de código remoto ou automações de jogo.
+- Natureza: o atributo aumentado agora fica com o cartão inteiro verde.
+- Natureza: o atributo reduzido agora fica com o cartão inteiro vermelho.
+- As setas de natureza foram removidas.
+- Cache curto para leituras repetidas do DOM durante batalhas.
+- Sincronização visual do Pokémon ativo foi limitada para evitar varreduras duplicadas.
+- MutationObserver agora fica ativo somente durante batalhas e ignora mudanças do próprio painel.
+- Polling de batalha reduzido e adaptado para dispositivos móveis.
+- Varredura de localStorage/sessionStorage/globais ficou menos frequente e pausa com a aba oculta.
+- Chaves globais do jogo são armazenadas em cache por 30 segundos.
+- No mobile, blur, sombras pesadas e animações decorativas são reduzidos/desativados.
+- Nenhum recurso de batalha, captura, itens, TMs/HMs, shiny ou eventos foi removido.
 
-## Funcionamento
+Versão BETA DE TESTE criada sobre a v0.2.8.21, preservando todos os recursos existentes.
 
-A extensão lê dados que já foram carregados na página do Infinity MMO e exibe, entre outros recursos:
+## Base completa de itens
 
-- IVs, atributos, natureza, habilidade e tipos;
-- fraquezas, resistências e imunidades;
-- recomendação baseada no time atual do jogador;
-- chance de captura;
-- estimativa de dano, chance de KO e barras de chefes;
-- golpes, PP, TMs/HMs e itens equipados reconhecidos;
-- alerta visual de encontro shiny;
-- contador de eventos no horário de Brasília;
-- alertas sonoros de 1 minuto e 30 segundos.
+- 154 itens únicos da InfinityWiki reconhecidos;
+- 64 itens com mecânica estruturada;
+- 52 itens relevantes para a previsão de KO;
+- 45 itens capazes de alterar o dano do atacante;
+- 8 itens capazes de alterar defesa, precisão ou sobrevivência do alvo;
+- 90 itens reconhecidos que não alteram o dano imediato.
 
-## Permissões
+## Efeitos aplicados ao dano
 
-O `manifest.json` solicita apenas:
+A previsão agora lê `heldItem` nos dados já entregues pelo jogo e aplica:
 
-- `storage`: salva preferências e estado local do painel;
-- `alarms`: agenda os alertas do contador de eventos;
-- `offscreen`: reproduz os sons empacotados quando necessário;
-- acesso somente a `https://infinitymmo.net/*` e `https://www.infinitymmo.net/*`.
+- itens de tipo em ×1,2;
+- Gems em ×1,5 enquanto ainda estiverem equipadas;
+- Expert Belt em ×1,2 somente em golpes super efetivos;
+- Life Orb em ×1,3;
+- Muscle Band e Wise Glasses em ×1,1;
+- Choice Band e Choice Specs em ×1,5 no atributo correspondente;
+- Light Ball, Thick Club, DeepSeaTooth e Soul Dew com suas condições de espécie;
+- Eviolite, DeepSeaScale, Metal Powder e Soul Dew na defesa do alvo;
+- BrightPowder e Lax Incense na precisão;
+- Focus Sash e Focus Band na classificação de KO.
 
-A extensão não solicita acesso a todas as páginas, histórico, downloads, área de transferência, cookies, localização, câmera ou microfone.
+Expert Belt, Choice Specs e Life Orb foram marcados como confirmados pelas
+descrições mostradas dentro do Infinity. Os demais usam o padrão Pokémon
+compatível com a geração indicada pelos dados de TMs/HMs.
 
-## Transparência e segurança
+## Reconhecimento sem alteração direta de dano
 
-- Manifest V3;
-- nenhum JavaScript carregado de servidores externos;
-- nenhuma biblioteca remota;
-- nenhuma telemetria adicionada;
-- nenhuma requisição de rede adicional criada pela extensão;
-- nenhum `eval`, `new Function` ou WebAssembly;
-- sons e imagens incluídos dentro do próprio pacote;
-- funcionamento local no navegador.
+Itens de cura, recuperação, status, prioridade, velocidade, crítico, evolução,
+exploração, vitaminas, Poké Balls e itens-chave continuam registrados na base.
+Eles não são usados como multiplicador de dano quando seu efeito não muda
+diretamente o golpe atual.
 
-O arquivo `page-hook.js` observa `fetch`, `XMLHttpRequest` e `WebSocket` da página para identificar dados que o próprio jogo já entrega ao navegador. Ele não cria comandos de batalha, captura ou movimentação.
+Itens de crítico são reconhecidos, mas a previsão permanece deliberadamente
+“sem crítico”, como já era antes.
 
-## Arquivos principais
+## Itens ofensivos estruturados
 
-- `manifest.json`: permissões e configuração da extensão;
-- `page-hook.js`: observação dos dados carregados pelo jogo;
-- `content.js`: painel, cálculos e apresentação;
-- `background.js`: alarmes e gerenciamento do áudio em segundo plano;
-- `offscreen.js` / `offscreen.html`: reprodução local dos alertas;
-- `pokemon-data.js`: base de Pokémon;
-- `capture-data.js`: dados usados na estimativa de captura;
-- `move-data.js`: base de golpes e TMs/HMs;
-- `item-data.js`: reconhecimento e efeitos estruturados de itens;
-- `popup.js` / `popup.html` / `popup.css`: configurações da extensão;
-- `panel.css`: estilos do painel.
+BLACK BELT, BLACKGLASSES, BUG GEM, CHARCOAL, CHOICE BAND, CHOICE SPECS, DARK GEM, DEEPSEATOOTH, DRAGON FANG, DRAGON GEM, ELECTRIC GEM, EXPERT BELT, FIGHTING GEM, FIRE GEM, FLYING GEM, GHOST GEM, GRASS GEM, GROUND GEM, HARD STONE, ICE GEM, LIFE ORB, LIGHT BALL, MAGNET, METAL COAT, MIRACLE SEED, MUSCLE BAND, MYSTIC WATER, NEVERMELTICE, NORMAL GEM, POISON BARB, POISON GEM, PSYCHIC GEM, ROCK GEM, SEA INCENSE, SHARP BEAK, SILK SCARF, SILVERPOWDER, SOFT SAND, SOUL DEW, SPELL TAG, STEEL GEM, THICK CLUB, TWISTEDSPOON, WATER GEM, WISE GLASSES
 
-## Instalação manual para auditoria
+## Itens defensivos/precisão/sobrevivência estruturados
 
-1. Baixe ou clone este repositório.
-2. Abra `chrome://extensions` no Chrome ou `edge://extensions` no Edge.
-3. Ative o **Modo do desenvolvedor**.
-4. Clique em **Carregar sem compactação**.
-5. Selecione a pasta deste projeto, onde está o `manifest.json`.
+BRIGHTPOWDER, DEEPSEASCALE, EVIOLITE, FOCUS BAND, FOCUS SASH, LAX INCENSE, METAL POWDER, SOUL DEW
 
-## Verificação
+## Preservado
 
-Os hashes SHA-256 dos arquivos desta versão estão em `SHA256SUMS.txt`.
+- base de 197 TMs/HMs da InfinityWiki;
+- alertas sonoros de 1 minuto e 30 segundos em segundo plano;
+- contador no horário de Brasília;
+- botão `✨ Pokémon apareceu` em largura total;
+- alerta visual de Pokémon shiny;
+- fórmula de captura;
+- ordem fixa da interface;
+- proteção da recomendação pelo time real;
+- informações técnicas ocultas;
+- crédito “Desenvolvido por: Lucca”;
+- Pokébola no arredondamento;
+- previsão de barras de boss;
+- sincronização de golpes, Pokémon ativo, HP e PC;
+- permissões `storage`, `alarms` e `offscreen`;
+- nenhuma requisição adicional.
 
-Uma revisão estática antes da publicação confirmou:
+## Status
 
-- sintaxe válida nos arquivos JavaScript;
-- nenhum domínio externo além do Infinity MMO no manifesto;
-- ausência de `eval`, `new Function` e código remoto;
-- permissões limitadas a `storage`, `alarms` e `offscreen`.
+Status: BETA DE TESTE. A v0.2.6.1 continua sendo a versão oficial estável.
 
-Isso não substitui uma auditoria independente. O objetivo do repositório é justamente permitir essa revisão pública.
+## Base preservada da v0.2.8.21
 
-## Observações da versão
-
-As alterações detalhadas da beta estão em [`docs/CHANGELOG-v0.2.8.21.md`](docs/CHANGELOG-v0.2.8.21.md).
-
-## Direitos
-
-Código publicado para inspeção e avaliação. Nenhuma licença de reutilização foi concedida neste repositório.
+Mantém a correção da descrição do `manifest.json` para permanecer abaixo do limite da Chrome Web Store, além de todos os recursos da beta anterior.

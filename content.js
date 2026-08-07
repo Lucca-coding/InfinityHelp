@@ -22,6 +22,35 @@
     'assets/infinityhelp-logo.png'
   );
 
+
+  // Lightweight runtime profile: keeps the same feature set while reducing
+  // repeated DOM scans and background work, especially on Android browsers
+  // that support Chromium extensions.
+  const IS_MOBILE_RUNTIME =
+    /Android|Mobile|Tablet/i.test(
+      navigator.userAgent || ''
+    ) ||
+    window.matchMedia?.('(pointer: coarse)').matches === true;
+
+  const PERFORMANCE_PROFILE = {
+    domCacheMs: IS_MOBILE_RUNTIME ? 360 : 220,
+    domSyncMinMs: IS_MOBILE_RUNTIME ? 240 : 140,
+    mutationSyncDelayMs: IS_MOBILE_RUNTIME ? 90 : 45,
+    activePollMs: IS_MOBILE_RUNTIME ? 900 : 650
+  };
+
+  let visibleGameTextCache = {
+    at: 0,
+    value: []
+  };
+
+  let visibleMoveEvidenceCache = {
+    at: 0,
+    value: []
+  };
+
+  let lastActivePlayerDomSyncAt = 0;
+
   // Used only when an NPC payload does not include the Pokémon types.
   // The original v0.2 wild encounter flow does not depend on this data.
   const PokemonData =
@@ -906,6 +935,16 @@ const STRONG_BATTLE_MODE_KEY =
 function visibleGameTextSamples(
   maximum = 3200
 ) {
+  const now = performance.now();
+
+  if (
+    maximum === 3200 &&
+    now - visibleGameTextCache.at <
+      PERFORMANCE_PROFILE.domCacheMs
+  ) {
+    return visibleGameTextCache.value;
+  }
+
   const output = [];
   const seen = new Set();
 
@@ -938,6 +977,13 @@ function visibleGameTextSamples(
 
     seen.add(text);
     output.push(text);
+  }
+
+  if (maximum === 3200) {
+    visibleGameTextCache = {
+      at: now,
+      value: output
+    };
   }
 
   return output;
@@ -2146,26 +2192,27 @@ function buildPerfectIvNotice(ivs) {
         const direction =
           natureDirection(nature, stat);
 
-        const arrow = direction
-          ? `
-            <span
-              class="ih-nature-arrow ih-nature-${direction}"
-              title="Natureza ${
-                direction === 'up'
-                  ? 'aumenta'
-                  : 'reduz'
-              } este atributo"
-              aria-label="Natureza ${
-                direction === 'up'
-                  ? 'aumenta'
-                  : 'reduz'
-              } este atributo"
-            >${direction === 'up' ? '↑' : '↓'}</span>
-          `
+        const natureCardClass = direction
+          ? ` ih-nature-card-${direction}`
+          : '';
+
+        const natureCardLabel = direction
+          ? `Natureza ${
+              direction === 'up'
+                ? 'aumenta'
+                : 'reduz'
+            } este atributo`
           : '';
 
         return `
-          <div class="ih-iv-card">
+          <div
+            class="ih-iv-card${natureCardClass}"
+            ${
+              natureCardLabel
+                ? `title="${escapeHtml(natureCardLabel)}" aria-label="${escapeHtml(natureCardLabel)}"`
+                : ''
+            }
+          >
             <span class="ih-iv-card-name">
               ${escapeHtml(labels[stat])}
             </span>
@@ -2178,7 +2225,6 @@ function buildPerfectIvNotice(ivs) {
               }">
                 ${iv ?? '—'}
               </strong>
-              ${arrow}
             </div>
 
             <small class="ih-iv-card-current">
@@ -5949,6 +5995,15 @@ function textMatchesMoveKey(text, moveKey) {
 }
 
 function collectVisibleBattleMoveEvidence() {
+  const now = performance.now();
+
+  if (
+    now - visibleMoveEvidenceCache.at <
+      PERFORMANCE_PROFILE.domCacheMs
+  ) {
+    return visibleMoveEvidenceCache.value;
+  }
+
   const elements = [
     ...document.querySelectorAll(
       ACTIVE_MOVE_ELEMENT_SELECTOR
@@ -5968,6 +6023,11 @@ function collectVisibleBattleMoveEvidence() {
       evidence.push(texts);
     }
   }
+
+  visibleMoveEvidenceCache = {
+    at: now,
+    value: evidence
+  };
 
   return evidence;
 }
@@ -6090,10 +6150,32 @@ function visibleTeamNameMatches() {
 
   const members = playerTeam
     .filter(member => !member.fainted)
-    .map(member => ({
-      member,
-      key: normalizeKey(member.name)
-    }))
+    .map(member => {
+      const key = normalizeKey(member.name);
+
+      return {
+        member,
+        key,
+        commandPromptPatterns: [
+          `oque${key}fara`,
+          `oque${key}vaifazer`,
+          `whatwill${key}do`,
+          `quehara${key}`,
+          `quevaahacer${key}`
+        ],
+        sendOutPatterns: [
+          `vai${key}`,
+          `vamos${key}`,
+          `go${key}`,
+          `goahead${key}`,
+          `adelante${key}`,
+          `${key}euescolhovoce`,
+          `${key}entrouemcampo`,
+          `${key}foienviado`,
+          `${key}wassentout`
+        ].map(normalizeKey)
+      };
+    })
     .filter(item => item.key);
 
   const scores = new Map(
@@ -6119,31 +6201,11 @@ function visibleTeamNameMatches() {
       let score = 0;
       let evidence = null;
 
-      const commandPromptPatterns = [
-        `oque${name}fara`,
-        `oque${name}vaifazer`,
-        `whatwill${name}do`,
-        `quehara${name}`,
-        `quevaahacer${name}`
-      ];
-
-      const sendOutPatterns = [
-        `vai${name}`,
-        `vamos${name}`,
-        `go${name}`,
-        `goahead${name}`,
-        `adelante${name}`,
-        `${name}euescolhovoce`,
-        `${name}entrouemcampo`,
-        `${name}foienviado`,
-        `${name}wassentout`
-      ].map(normalizeKey);
-
       if (
-        commandPromptPatterns.some(pattern =>
+        item.commandPromptPatterns.some(pattern =>
           normalized.includes(pattern)
         ) ||
-        sendOutPatterns.some(pattern =>
+        item.sendOutPatterns.some(pattern =>
           normalized.includes(pattern)
         )
       ) {
@@ -6906,6 +6968,21 @@ function setActivePlayerPokemon(
 }
 
 function syncActivePlayerFromBattleDom() {
+  if (document.hidden) {
+    return false;
+  }
+
+  const now = performance.now();
+
+  if (
+    now - lastActivePlayerDomSyncAt <
+      PERFORMANCE_PROFILE.domSyncMinMs
+  ) {
+    return false;
+  }
+
+  lastActivePlayerDomSyncAt = now;
+
   const found =
     findActivePlayerFromVisibleMoves();
 
@@ -6981,20 +7058,48 @@ function scheduleActivePlayerDomSync(
   );
 }
 
+function stopActivePlayerDomObserver() {
+  if (!activePlayerDomObserver) {
+    return;
+  }
+
+  activePlayerDomObserver.disconnect();
+  activePlayerDomObserver = null;
+}
+
 function startActivePlayerDomObserver() {
   if (
     activePlayerDomObserver ||
-    !document.documentElement
+    !document.documentElement ||
+    !activeEncounter ||
+    document.hidden
   ) {
     return;
   }
 
   activePlayerDomObserver =
-    new MutationObserver(() => {
-      if (activeEncounter) {
-        syncEncounterModeFromBattleDom();
-        scheduleActivePlayerDomSync(20);
+    new MutationObserver(mutations => {
+      if (!activeEncounter || document.hidden) {
+        return;
       }
+
+      const hasGameMutation = mutations.some(mutation => {
+        const target =
+          mutation.target?.nodeType === Node.ELEMENT_NODE
+            ? mutation.target
+            : mutation.target?.parentElement;
+
+        return !target?.closest?.('#infinity-help-panel');
+      });
+
+      if (!hasGameMutation) {
+        return;
+      }
+
+      syncEncounterModeFromBattleDom();
+      scheduleActivePlayerDomSync(
+        PERFORMANCE_PROFILE.mutationSyncDelayMs
+      );
     });
 
   activePlayerDomObserver.observe(
@@ -7010,7 +7115,6 @@ function startActivePlayerDomObserver() {
         'hidden',
         'aria-hidden',
         'aria-label',
-        'title',
         'data-move',
         'data-move-name',
         'data-attack',
@@ -10748,7 +10852,7 @@ function confirmCurrentEventWindow() {
           <img src="${escapeHtml(LOGO_URL)}" alt="">
 
           <div class="ih-header-meta">
-            <span class="ih-version">v0.2.8.21</span>
+            <span class="ih-version">v0.2.8.23 BETA</span>
 
             <span class="ih-credit">
               <small>Desenvolvido por:</small>
@@ -11087,6 +11191,10 @@ function confirmCurrentEventWindow() {
       activePlayerDomSyncTimer = null;
     }
 
+    stopActivePlayerDomObserver();
+    visibleGameTextCache = { at: 0, value: [] };
+    visibleMoveEvidenceCache = { at: 0, value: [] };
+
     stopMoveRescanLoop();
     npcBattleRecordCache.clear();
 
@@ -11364,6 +11472,7 @@ function requestConfirmedEncounterEnd(
       snapshot
     };
 
+    startActivePlayerDomObserver();
     refreshTypeRecommendation();
     refreshKoForecast();
     refreshCaptureForecast();
@@ -11541,6 +11650,7 @@ function renderNpcEncounter(
     snapshot
   };
 
+  startActivePlayerDomObserver();
   refreshTypeRecommendation();
   refreshKoForecast();
   refreshCaptureForecast();
@@ -11957,19 +12067,38 @@ chrome.storage.local.get(
 
   window.addEventListener('resize', applySettings);
 
-  startActivePlayerDomObserver();
+  document.addEventListener(
+    'visibilitychange',
+    () => {
+      if (document.hidden) {
+        stopActivePlayerDomObserver();
+        return;
+      }
+
+      updateEventCountdownDisplay();
+
+      if (activeEncounter) {
+        visibleGameTextCache = { at: 0, value: [] };
+        visibleMoveEvidenceCache = { at: 0, value: [] };
+        startActivePlayerDomObserver();
+        syncEncounterModeFromBattleDom();
+        scheduleActivePlayerDomSync(0);
+      }
+    }
+  );
 
   setInterval(() => {
-    if (activeEncounter) {
+    if (activeEncounter && !document.hidden) {
       syncEncounterModeFromBattleDom();
       syncActivePlayerFromBattleDom();
     }
-  }, 300);
+  }, PERFORMANCE_PROFILE.activePollMs);
 
-  setInterval(
-    updateEventCountdownDisplay,
-    1000
-  );
+  setInterval(() => {
+    if (!document.hidden) {
+      updateEventCountdownDisplay();
+    }
+  }, 1000);
 
   chrome.runtime.sendMessage({
     action:

@@ -9,6 +9,20 @@
     'InfinityHelpMoveRescanRequest';
   const MAX_TEXT_LENGTH = 900_000;
 
+
+  const IS_MOBILE_RUNTIME =
+    /Android|Mobile|Tablet/i.test(
+      navigator.userAgent || ''
+    ) ||
+    window.matchMedia?.('(pointer: coarse)').matches === true;
+
+  const STATE_RESCAN_INTERVAL_MS =
+    IS_MOBILE_RUNTIME ? 6000 : 3500;
+
+  const DYNAMIC_GLOBAL_KEYS_TTL_MS = 30000;
+  let cachedDynamicGlobalKeys = [];
+  let cachedDynamicGlobalKeysAt = 0;
+
   const nativeJsonParse =
     JSON.parse.bind(JSON);
 
@@ -471,13 +485,26 @@ function inspectKnownGlobals() {
       '__PLAYER_STATE__'
     ];
 
+    const now = Date.now();
+
+    if (
+      now - cachedDynamicGlobalKeysAt >
+        DYNAMIC_GLOBAL_KEYS_TTL_MS ||
+      !cachedDynamicGlobalKeys.length
+    ) {
+      cachedDynamicGlobalKeys =
+        Object.keys(window)
+          .filter(key =>
+            /game|state|store|player|party|team|battle|pokemon/i
+              .test(key)
+          )
+          .slice(0, 120);
+
+      cachedDynamicGlobalKeysAt = now;
+    }
+
     const dynamicKeys =
-      Object.keys(window)
-        .filter(key =>
-          /game|state|store|player|party|team|battle|pokemon/i
-            .test(key)
-        )
-        .slice(0, 120);
+      cachedDynamicGlobalKeys;
 
     for (const key of [
       ...new Set([
@@ -518,6 +545,10 @@ function inspectKnownGlobals() {
 let storageScanTimer = null;
 
 function runFastStateScan() {
+  if (document.hidden) {
+    return;
+  }
+
   inspectStorage(
     window.localStorage,
     'localStorage'
@@ -636,14 +667,11 @@ try {
 
 for (const delay of [
   0,
-  60,
-  160,
-  350,
-  700,
-  1200,
+  100,
+  320,
+  900,
   2200,
-  4000,
-  7000
+  5200
 ]) {
   setTimeout(
     runFastStateScan,
@@ -651,9 +679,18 @@ for (const delay of [
   );
 }
 
+window.addEventListener(
+  'visibilitychange',
+  () => {
+    if (!document.hidden) {
+      scheduleFastStateScan(60);
+    }
+  }
+);
+
 setInterval(
   runFastStateScan,
-  1500
+  STATE_RESCAN_INTERVAL_MS
 );
 
   emit('hook', {
