@@ -12,6 +12,9 @@ const ALARM_THIRTY_SECONDS =
 const SCHEDULE_STORAGE_KEY =
   'infinityHelpEventBackgroundScheduleV1';
 
+const SETTINGS_STORAGE_KEY =
+  'infinityHelpSettings';
+
 let offscreenCreation = null;
 
 
@@ -239,6 +242,19 @@ async function ensureOffscreenDocument() {
 
 
 async function playBackgroundTone(kind) {
+  const stored =
+    await chrome.storage.local.get(
+      SETTINGS_STORAGE_KEY
+    );
+
+  const soundEnabled =
+    stored[SETTINGS_STORAGE_KEY]
+      ?.soundEnabled !== false;
+
+  if (!soundEnabled) {
+    return true;
+  }
+
   await ensureOffscreenDocument();
 
   const response =
@@ -257,6 +273,27 @@ async function playBackgroundTone(kind) {
 
   return true;
 }
+
+
+chrome.storage.onChanged.addListener(
+  (changes, area) => {
+    if (area !== 'local') return;
+
+    const nextSettings =
+      changes[SETTINGS_STORAGE_KEY]
+        ?.newValue;
+
+    if (
+      nextSettings &&
+      nextSettings.soundEnabled === false
+    ) {
+      chrome.runtime.sendMessage({
+        target: 'infinityHelpOffscreen',
+        action: 'stopEventTone'
+      }).catch(() => {});
+    }
+  }
+);
 
 
 chrome.alarms.onAlarm.addListener(

@@ -1,14 +1,21 @@
-# InfinityHelp v0.2.8.23 — BETA DE TESTE
-
-Código-fonte público para revisão técnica e transparência. Esta versão é a mesma base da extensão BETA distribuída para testes.
-
-A extensão trabalha com dados já carregados pelo Infinity MMO e não inclui bot, macro ou automação de ações do jogador.
+# InfinityHelp v0.2.8.26 — BETA DE TESTE
 
 ## Alterações desta beta
 
-- Natureza: o atributo aumentado agora fica com o cartão inteiro verde.
-- Natureza: o atributo reduzido agora fica com o cartão inteiro vermelho.
-- As setas de natureza foram removidas.
+- Novo modo `↕ Organizar` para mudar a ordem visual das cinco seções principais com arrastar e soltar, inclusive por toque.
+- A ordem personalizada é salva em `chrome.storage.local` e reaplicada automaticamente sem alterar a lógica interna de cada card.
+- No modo de organização, o botão `+ / −` fica protegido contra cliques acidentais e aparece uma alça `⋮⋮` dedicada ao arraste.
+- Botão `↺ Padrão` restaura a ordem original: Status & IVs → Fraquezas & Resistências → Recomendação → Chance de Matar → Chance de Captura.
+- Crédito `Desenvolvido por: Lucca` foi reposicionado diretamente abaixo da versão no cabeçalho, evitando colisão com os botões de som/fechar/minimizar.
+
+- Novo card compacto `PRÓXIMA TEMPESTADE` logo abaixo do contador de evento principal.
+- Tempestade baseada no horário de Brasília: âncora confirmada em 08/08/2026 às 01:55, duração de 10 minutos e repetição a cada 5 horas.
+- Cronômetro automático mostra `Começa em` fora da janela e `Termina em` durante a Tempestade.
+- O card mostra a janela atual/próxima e os três próximos horários, mantendo tamanho visual menor que o evento principal.
+- Natureza: mantém o cartão inteiro verde no atributo aumentado e vermelho no atributo reduzido.
+- Natureza: as setas `↑` e `↓` voltaram ao lado do IV para reforçar visualmente o efeito.
+- Novo botão `🔊 / 🔇` no cabeçalho para ativar ou mutar os alertas sonoros.
+- A preferência de som fica salva no navegador e também é respeitada pelos alarmes em segundo plano.
 - Cache curto para leituras repetidas do DOM durante batalhas.
 - Sincronização visual do Pokémon ativo foi limitada para evitar varreduras duplicadas.
 - MutationObserver agora fica ativo somente durante batalhas e ignora mudanças do próprio painel.
@@ -18,7 +25,7 @@ A extensão trabalha com dados já carregados pelo Infinity MMO e não inclui bo
 - No mobile, blur, sombras pesadas e animações decorativas são reduzidos/desativados.
 - Nenhum recurso de batalha, captura, itens, TMs/HMs, shiny ou eventos foi removido.
 
-Versão BETA DE TESTE criada sobre a v0.2.8.21, preservando todos os recursos existentes.
+Versão BETA DE TESTE criada sobre a v0.2.8.23, preservando todos os recursos e otimizações de desempenho existentes.
 
 ## Base completa de itens
 
@@ -69,12 +76,12 @@ BRIGHTPOWDER, DEEPSEASCALE, EVIOLITE, FOCUS BAND, FOCUS SASH, LAX INCENSE, METAL
 ## Preservado
 
 - base de 197 TMs/HMs da InfinityWiki;
-- alertas sonoros de 1 minuto e 30 segundos em segundo plano;
+- alertas sonoros de 1 minuto e 30 segundos em segundo plano, agora com mute persistente;
 - contador no horário de Brasília;
 - botão `✨ Pokémon apareceu` em largura total;
 - alerta visual de Pokémon shiny;
 - fórmula de captura;
-- ordem fixa da interface;
+- ordem das seções agora personalizável e persistente;
 - proteção da recomendação pelo time real;
 - informações técnicas ocultas;
 - crédito “Desenvolvido por: Lucca”;
@@ -88,6 +95,6 @@ BRIGHTPOWDER, DEEPSEASCALE, EVIOLITE, FOCUS BAND, FOCUS SASH, LAX INCENSE, METAL
 
 Status: BETA DE TESTE. A v0.2.6.1 continua sendo a versão oficial estável.
 
-## Base preservada da v0.2.8.21
+## Base preservada da v0.2.8.23
 
 Mantém a correção da descrição do `manifest.json` para permanecer abaixo do limite da Chrome Web Store, além de todos os recursos da beta anterior.

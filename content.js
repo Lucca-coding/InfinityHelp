@@ -18,6 +18,15 @@
 
   const EVENT_WINDOW_ACTIVE_MS = 60000;
 
+  // Tempestade confirmada em 08/08/2026 às 01:55 no horário de Brasília.
+  // O evento dura 10 minutos e repete a cada 5 horas.
+  const STORM_INITIAL_CONFIRMED_SLOT =
+    '2026-08-08T01:55';
+  const STORM_CYCLE_MS =
+    5 * 60 * 60 * 1000;
+  const STORM_DURATION_MS =
+    10 * 60 * 1000;
+
   const LOGO_URL = chrome.runtime.getURL(
     'assets/infinityhelp-logo.png'
   );
@@ -94,6 +103,14 @@
     koCollapsed: false,
     captureCollapsed: false,
     captureRoundUp: false,
+    soundEnabled: true,
+    sectionOrder: [
+      'ivs',
+      'effects',
+      'recommendation',
+      'ko',
+      'capture'
+    ],
     eventLastConfirmedSlot:
       EVENT_INITIAL_CONFIRMED_SLOT,
     eventLastOneMinuteAlertSlot: null,
@@ -101,6 +118,8 @@
   };
 
   let settings = { ...defaults };
+  let sectionOrganizeMode = false;
+  let sectionDragState = null;
   let panel = null;
   let body = null;
   let diagnosticPre = null;
@@ -2204,6 +2223,15 @@ function buildPerfectIvNotice(ivs) {
             } este atributo`
           : '';
 
+        const arrow = direction
+          ? `
+            <span
+              class="ih-nature-arrow ih-nature-${direction}"
+              aria-hidden="true"
+            >${direction === 'up' ? '↑' : '↓'}</span>
+          `
+          : '';
+
         return `
           <div
             class="ih-iv-card${natureCardClass}"
@@ -2225,6 +2253,7 @@ function buildPerfectIvNotice(ivs) {
               }">
                 ${iv ?? '—'}
               </strong>
+              ${arrow}
             </div>
 
             <small class="ih-iv-card-current">
@@ -5388,19 +5417,38 @@ function enforceFixedPanelBlockOrder() {
   const source =
     body.querySelector('.ih-source');
 
-  const cards = [
-    body.querySelector('.ih-effect-card'),
-    body.querySelector('#ih-type-recommendation'),
-    body.querySelector('#ih-ko-forecast'),
-    body.querySelector('#ih-capture-forecast')
-  ].filter(Boolean);
+  const order =
+    normalizedSectionOrder(
+      settings.sectionOrder
+    );
 
-  for (const card of cards) {
+  settings.sectionOrder = order;
+
+  const cardsByKey = new Map();
+
+  for (const card of body.querySelectorAll(
+    '.ih-card[data-collapsible-section]'
+  )) {
+    const key =
+      card.dataset.collapsibleSection;
+
+    if (key) {
+      cardsByKey.set(key, card);
+    }
+  }
+
+  for (const key of order) {
+    const card = cardsByKey.get(key);
+
+    if (!card) continue;
+
     body.insertBefore(
       card,
       source || null
     );
   }
+
+  updateSectionOrderUi();
 }
 
 
@@ -10261,6 +10309,345 @@ const COLLAPSIBLE_SECTION_CONFIG = {
   }
 };
 
+const DEFAULT_SECTION_ORDER = Object.freeze([
+  'ivs',
+  'effects',
+  'recommendation',
+  'ko',
+  'capture'
+]);
+
+function normalizedSectionOrder(order) {
+  const valid = new Set(
+    DEFAULT_SECTION_ORDER
+  );
+
+  const next = [];
+
+  if (Array.isArray(order)) {
+    for (const key of order) {
+      if (
+        valid.has(key) &&
+        !next.includes(key)
+      ) {
+        next.push(key);
+      }
+    }
+  }
+
+  for (const key of DEFAULT_SECTION_ORDER) {
+    if (!next.includes(key)) {
+      next.push(key);
+    }
+  }
+
+  return next;
+}
+
+function ensureSectionDragHandle(
+  card,
+  sectionKey
+) {
+  const header = card.querySelector(
+    ':scope > .ih-section-header'
+  );
+
+  if (!header) return;
+
+  let handle = header.querySelector(
+    ':scope > [data-section-drag]'
+  );
+
+  if (!handle) {
+    handle = document.createElement('button');
+    handle.type = 'button';
+    handle.className =
+      'ih-section-drag-handle';
+    handle.dataset.sectionDrag = sectionKey;
+    handle.textContent = '⋮⋮';
+    handle.setAttribute(
+      'title',
+      'Arraste para mudar a ordem'
+    );
+    handle.setAttribute(
+      'aria-label',
+      `Mover ${
+        COLLAPSIBLE_SECTION_CONFIG[sectionKey]
+          ?.title || 'seção'
+      }`
+    );
+
+    const toggle = header.querySelector(
+      ':scope > .ih-section-toggle'
+    );
+
+    header.insertBefore(
+      handle,
+      toggle || null
+    );
+  }
+}
+
+function visibleSectionCards() {
+  if (!body) return [];
+
+  return [...body.querySelectorAll(
+    '.ih-card[data-collapsible-section]'
+  )];
+}
+
+function updateSectionOrderUi() {
+  if (!body || !panel) return;
+
+  const cards = visibleSectionCards();
+  let toolbar = body.querySelector(
+    '.ih-section-order-toolbar'
+  );
+
+  if (!cards.length) {
+    toolbar?.remove();
+    sectionOrganizeMode = false;
+    sectionDragState = null;
+    panel.classList.remove(
+      'ih-organize-sections'
+    );
+    return;
+  }
+
+  for (const card of cards) {
+    const key =
+      card.dataset.collapsibleSection;
+
+    if (key) {
+      ensureSectionDragHandle(card, key);
+    }
+  }
+
+  if (!toolbar) {
+    toolbar = document.createElement('div');
+    toolbar.className =
+      'ih-section-order-toolbar';
+    toolbar.innerHTML = `
+      <span class="ih-section-order-hint">
+        Ordem das seções
+      </span>
+
+      <div class="ih-section-order-actions">
+        <button
+          type="button"
+          class="ih-section-order-reset"
+          data-section-order-action="reset"
+          title="Restaurar ordem padrão"
+        >↺ Padrão</button>
+
+        <button
+          type="button"
+          class="ih-section-order-toggle"
+          data-section-order-action="toggle"
+          title="Organizar seções"
+          aria-pressed="false"
+        >↕ Organizar</button>
+      </div>
+    `;
+  }
+
+  body.insertBefore(
+    toolbar,
+    cards[0]
+  );
+
+  panel.classList.toggle(
+    'ih-organize-sections',
+    sectionOrganizeMode
+  );
+
+  const toggle = toolbar.querySelector(
+    '[data-section-order-action="toggle"]'
+  );
+
+  if (toggle) {
+    toggle.textContent =
+      sectionOrganizeMode
+        ? '✓ Concluir'
+        : '↕ Organizar';
+    toggle.setAttribute(
+      'aria-pressed',
+      String(sectionOrganizeMode)
+    );
+    toggle.setAttribute(
+      'title',
+      sectionOrganizeMode
+        ? 'Concluir organização'
+        : 'Organizar seções'
+    );
+  }
+}
+
+function setSectionOrganizeMode(enabled) {
+  sectionOrganizeMode = Boolean(enabled);
+
+  if (!sectionOrganizeMode) {
+    finishSectionDrag();
+  }
+
+  updateSectionOrderUi();
+}
+
+function resetSectionOrder() {
+  settings.sectionOrder = [
+    ...DEFAULT_SECTION_ORDER
+  ];
+
+  enforceFixedPanelBlockOrder();
+  saveSettings();
+}
+
+function saveSectionOrderFromDom() {
+  const visible = visibleSectionCards()
+    .map(card =>
+      card.dataset.collapsibleSection
+    )
+    .filter(Boolean);
+
+  if (!visible.length) return;
+
+  const visibleSet = new Set(visible);
+  const current = normalizedSectionOrder(
+    settings.sectionOrder
+  );
+
+  let index = 0;
+
+  settings.sectionOrder = current.map(key => {
+    if (!visibleSet.has(key)) {
+      return key;
+    }
+
+    const replacement = visible[index];
+    index += 1;
+    return replacement;
+  });
+
+  saveSettings();
+}
+
+function startSectionDrag(event) {
+  if (
+    !sectionOrganizeMode ||
+    !body
+  ) {
+    return;
+  }
+
+  const handle = event.target.closest(
+    '[data-section-drag]'
+  );
+
+  if (!handle || !body.contains(handle)) {
+    return;
+  }
+
+  const card = handle.closest(
+    '.ih-card[data-collapsible-section]'
+  );
+
+  if (!card) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  sectionDragState = {
+    pointerId: event.pointerId,
+    card,
+    handle
+  };
+
+  card.classList.add(
+    'ih-section-dragging'
+  );
+
+  try {
+    handle.setPointerCapture(
+      event.pointerId
+    );
+  } catch (_) {}
+}
+
+function moveSectionDrag(event) {
+  if (
+    !sectionDragState ||
+    event.pointerId !==
+      sectionDragState.pointerId ||
+    !body
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+
+  const dragged = sectionDragState.card;
+  const others = visibleSectionCards()
+    .filter(card => card !== dragged);
+
+  let inserted = false;
+
+  for (const target of others) {
+    const rect =
+      target.getBoundingClientRect();
+
+    if (
+      event.clientY <
+      rect.top + rect.height / 2
+    ) {
+      body.insertBefore(
+        dragged,
+        target
+      );
+      inserted = true;
+      break;
+    }
+  }
+
+  if (!inserted) {
+    const source =
+      body.querySelector('.ih-source');
+
+    body.insertBefore(
+      dragged,
+      source || null
+    );
+  }
+}
+
+function finishSectionDrag(event = null) {
+  if (!sectionDragState) return;
+
+  if (
+    event &&
+    event.pointerId !==
+      sectionDragState.pointerId
+  ) {
+    return;
+  }
+
+  const { card, handle, pointerId } =
+    sectionDragState;
+
+  card?.classList.remove(
+    'ih-section-dragging'
+  );
+
+  try {
+    handle?.releasePointerCapture(
+      pointerId
+    );
+  } catch (_) {}
+
+  sectionDragState = null;
+  saveSectionOrderFromDom();
+  updateSectionOrderUi();
+}
+
 function collapsibleSectionKey(card) {
   const heading = card?.querySelector(':scope > h3');
 
@@ -10417,7 +10804,15 @@ function prepareCollapsibleSections() {
       card,
       sectionKey
     );
+
+    ensureSectionDragHandle(
+      card,
+      sectionKey
+    );
   }
+
+  enforceFixedPanelBlockOrder();
+  updateSectionOrderUi();
 }
 
 function toggleCollapsibleSection(
@@ -10699,6 +11094,226 @@ function eventSlotTimeLabel(slotKey) {
 }
 
 
+
+function stormSlotPseudoMs(slotKey) {
+  const match = String(slotKey || '').match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/
+  );
+
+  if (!match) {
+    return Date.UTC(
+      2026,
+      7,
+      8,
+      1,
+      55,
+      0
+    );
+  }
+
+  return Date.UTC(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    Number(match[4]),
+    Number(match[5]),
+    0
+  );
+}
+
+
+function stormTimeLabel(pseudoMs) {
+  const date = new Date(pseudoMs);
+
+  const hour = String(
+    date.getUTCHours()
+  ).padStart(2, '0');
+
+  const minute = String(
+    date.getUTCMinutes()
+  ).padStart(2, '0');
+
+  return `${hour}:${minute}`;
+}
+
+
+function stormCountdownModel(
+  date = new Date()
+) {
+  const parts = eventBrasiliaParts(date);
+  const nowPseudoMs =
+    eventPartsToPseudoMs(parts);
+
+  const anchorMs = stormSlotPseudoMs(
+    STORM_INITIAL_CONFIRMED_SLOT
+  );
+
+  const elapsedMs =
+    nowPseudoMs - anchorMs;
+
+  const cycleIndex = Math.floor(
+    elapsedMs / STORM_CYCLE_MS
+  );
+
+  const currentStartMs =
+    anchorMs +
+    cycleIndex * STORM_CYCLE_MS;
+
+  const currentEndMs =
+    currentStartMs + STORM_DURATION_MS;
+
+  const isActive =
+    nowPseudoMs >= currentStartMs &&
+    nowPseudoMs < currentEndMs;
+
+  const targetStartMs = isActive
+    ? currentStartMs
+    : currentStartMs + STORM_CYCLE_MS;
+
+  const targetEndMs = isActive
+    ? currentEndMs
+    : targetStartMs + STORM_DURATION_MS;
+
+  const remainingMs = isActive
+    ? currentEndMs - nowPseudoMs
+    : targetStartMs - nowPseudoMs;
+
+  return {
+    isActive,
+    remainingMs: Math.max(0, remainingMs),
+    targetStartMs,
+    targetEndMs,
+    nextStartMs:
+      targetStartMs + STORM_CYCLE_MS,
+    nextStart2Ms:
+      targetStartMs + STORM_CYCLE_MS * 2,
+    nextStart3Ms:
+      targetStartMs + STORM_CYCLE_MS * 3
+  };
+}
+
+
+function buildStormCountdownCard() {
+  return `
+    <section
+      class="ih-storm-countdown"
+      aria-label="Próxima Tempestade"
+    >
+      <div class="ih-storm-heading">
+        <span
+          class="ih-storm-icon"
+          aria-hidden="true"
+        >⛈</span>
+
+        <div>
+          <strong data-storm-title>
+            PRÓXIMA TEMPESTADE
+          </strong>
+          <small>Horário de Brasília</small>
+        </div>
+      </div>
+
+      <div class="ih-storm-main">
+        <span data-storm-label>
+          Começa em
+        </span>
+        <strong data-storm-countdown>
+          --:--:--
+        </strong>
+      </div>
+
+      <div class="ih-storm-meta">
+        <span>
+          Horário:
+          <strong data-storm-window>
+            --:-- - --:--
+          </strong>
+        </span>
+
+        <span>
+          Próximas:
+          <strong data-storm-next>
+            --:-- • --:-- • --:--
+          </strong>
+        </span>
+      </div>
+    </section>
+  `;
+}
+
+
+function updateStormCountdownDisplay() {
+  if (!body) return;
+
+  const card = body.querySelector(
+    '.ih-storm-countdown'
+  );
+
+  if (!card) return;
+
+  const model = stormCountdownModel();
+
+  const title = card.querySelector(
+    '[data-storm-title]'
+  );
+
+  const label = card.querySelector(
+    '[data-storm-label]'
+  );
+
+  const countdown = card.querySelector(
+    '[data-storm-countdown]'
+  );
+
+  const windowLabel = card.querySelector(
+    '[data-storm-window]'
+  );
+
+  const next = card.querySelector(
+    '[data-storm-next]'
+  );
+
+  if (title) {
+    title.textContent = model.isActive
+      ? 'TEMPESTADE ATIVA'
+      : 'PRÓXIMA TEMPESTADE';
+  }
+
+  if (label) {
+    label.textContent = model.isActive
+      ? 'Termina em'
+      : 'Começa em';
+  }
+
+  if (countdown) {
+    countdown.textContent =
+      formatEventCountdown(
+        model.remainingMs
+      );
+  }
+
+  if (windowLabel) {
+    windowLabel.textContent =
+      `${stormTimeLabel(model.targetStartMs)} - ` +
+      `${stormTimeLabel(model.targetEndMs)}`;
+  }
+
+  if (next) {
+    next.textContent = [
+      model.nextStartMs,
+      model.nextStart2Ms,
+      model.nextStart3Ms
+    ]
+      .map(stormTimeLabel)
+      .join(' • ');
+  }
+
+  card.classList.toggle(
+    'ih-storm-now',
+    model.isActive
+  );
+}
+
 function buildEventCountdownCard() {
   return `
     <section
@@ -10751,6 +11366,8 @@ function buildEventCountdownCard() {
 
 
 function updateEventCountdownDisplay() {
+  updateStormCountdownDisplay();
+
   if (!body) return;
 
   const card = body.querySelector(
@@ -10852,7 +11469,7 @@ function confirmCurrentEventWindow() {
           <img src="${escapeHtml(LOGO_URL)}" alt="">
 
           <div class="ih-header-meta">
-            <span class="ih-version">v0.2.8.23 BETA</span>
+            <span class="ih-version">v0.2.8.26 BETA</span>
 
             <span class="ih-credit">
               <small>Desenvolvido por:</small>
@@ -10862,6 +11479,15 @@ function confirmCurrentEventWindow() {
         </div>
 
         <div class="ih-header-actions">
+          <button
+            type="button"
+            class="ih-sound-toggle"
+            data-action="sound"
+            title="Mutar alertas sonoros"
+            aria-label="Mutar alertas sonoros"
+            aria-pressed="false"
+          >🔊</button>
+
           <button
             type="button"
             data-action="close"
@@ -10890,6 +11516,42 @@ function confirmCurrentEventWindow() {
     body = panel.querySelector('.ih-body');
 
     body.addEventListener('click', event => {
+      const orderAction =
+        event.target.closest(
+          '[data-section-order-action]'
+        );
+
+      if (
+        orderAction &&
+        body.contains(orderAction)
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (
+          orderAction.dataset.sectionOrderAction ===
+          'reset'
+        ) {
+          resetSectionOrder();
+        } else {
+          setSectionOrganizeMode(
+            !sectionOrganizeMode
+          );
+        }
+
+        return;
+      }
+
+      if (
+        event.target.closest(
+          '[data-section-drag]'
+        )
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
       const eventConfirmedButton =
         event.target.closest(
           '[data-event-confirmed]'
@@ -10943,6 +11605,33 @@ function confirmCurrentEventWindow() {
         button.dataset.sectionToggle
       );
     });
+
+    body.addEventListener(
+      'pointerdown',
+      startSectionDrag
+    );
+    body.addEventListener(
+      'pointermove',
+      moveSectionDrag
+    );
+    body.addEventListener(
+      'pointerup',
+      finishSectionDrag
+    );
+    body.addEventListener(
+      'pointercancel',
+      finishSectionDrag
+    );
+
+    panel
+      .querySelector('[data-action="sound"]')
+      .addEventListener('click', () => {
+        settings.soundEnabled =
+          settings.soundEnabled === false;
+
+        applySettings();
+        saveSettings();
+      });
 
     panel
       .querySelector('[data-action="collapse"]')
@@ -11112,6 +11801,38 @@ function confirmCurrentEventWindow() {
       settings.diagnostic
     );
 
+    const soundButton = panel.querySelector(
+      '[data-action="sound"]'
+    );
+
+    if (soundButton) {
+      const soundEnabled =
+        settings.soundEnabled !== false;
+
+      soundButton.textContent =
+        soundEnabled ? '🔊' : '🔇';
+      soundButton.classList.toggle(
+        'ih-is-muted',
+        !soundEnabled
+      );
+      soundButton.setAttribute(
+        'aria-pressed',
+        String(!soundEnabled)
+      );
+      soundButton.setAttribute(
+        'title',
+        soundEnabled
+          ? 'Mutar alertas sonoros'
+          : 'Ativar alertas sonoros'
+      );
+      soundButton.setAttribute(
+        'aria-label',
+        soundEnabled
+          ? 'Mutar alertas sonoros'
+          : 'Ativar alertas sonoros'
+      );
+    }
+
     const maxWidth = Math.max(
       280,
       window.innerWidth - 16
@@ -11163,6 +11884,8 @@ function confirmCurrentEventWindow() {
     panel.style.bottom = 'auto';
 
     applyCollapsibleSections();
+    enforceFixedPanelBlockOrder();
+    updateSectionOrderUi();
   }
 
   function saveSettings() {
@@ -11210,6 +11933,7 @@ function confirmCurrentEventWindow() {
 
     body.innerHTML = `
       ${buildEventCountdownCard()}
+      ${buildStormCountdownCard()}
 
       <div class="ih-idle">
         <img
@@ -11403,6 +12127,7 @@ function requestConfirmedEncounterEnd(
 
     body.innerHTML = `
       ${buildEventCountdownCard()}
+      ${buildStormCountdownCard()}
 
       <div class="ih-found">
         IVs encontrados no encontro atual.
@@ -11574,6 +12299,7 @@ function renderNpcEncounter(
 
   body.innerHTML = `
     ${buildEventCountdownCard()}
+      ${buildStormCountdownCard()}
 
     <div class="ih-npc-banner">
       <strong>BATALHA CONTRA NPC</strong>

@@ -116,36 +116,43 @@
 
 #infinity-help-panel .ih-header-meta {
   flex: 0 0 auto;
+  min-width: 68px;
 
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+
+  line-height: 1;
 }
 
 #infinity-help-panel .ih-version {
   color: #8491b2;
   font-size: 9px;
+  white-space: nowrap;
 }
 
 #infinity-help-panel .ih-credit {
   display: flex;
-  flex-direction: column;
+  align-items: baseline;
+  gap: 2px;
 
   color: #667493;
   font-size: 7px;
-  line-height: 1.02;
+  line-height: 1;
   white-space: nowrap;
 }
 
 #infinity-help-panel .ih-credit small {
   color: #5c6988;
-  font-size: 6px;
+  font-size: 5.5px;
   font-weight: 600;
 }
 
 #infinity-help-panel .ih-credit strong {
   color: #8997b8;
-  font-size: 7px;
+  font-size: 6.5px;
   font-weight: 700;
 }
 
@@ -154,6 +161,17 @@
 
   display: flex;
   gap: 6px;
+}
+
+#infinity-help-panel .ih-sound-toggle {
+  font-size: 13px;
+  line-height: 1;
+}
+
+#infinity-help-panel .ih-sound-toggle.ih-is-muted {
+  color: #ffb3c4;
+  border-color: rgba(255, 112, 145, .26);
+  background: rgba(255, 80, 120, .08);
 }
 
 #infinity-help-panel button {
@@ -409,6 +427,125 @@
   .ih-event-countdown.ih-event-now {
     animation: none;
   }
+}
+
+
+/* Compact secondary card for the recurring Tempestade event. */
+#infinity-help-panel .ih-storm-countdown {
+  margin: -2px 0 10px;
+  padding: 8px 9px;
+
+  border:
+    1px solid rgba(154, 105, 255, .26);
+  border-radius: 9px;
+
+  background:
+    linear-gradient(
+      120deg,
+      rgba(86, 53, 166, .11),
+      rgba(23, 33, 74, .18) 60%,
+      rgba(116, 62, 190, .08)
+    );
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .025);
+}
+
+#infinity-help-panel .ih-storm-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#infinity-help-panel .ih-storm-icon {
+  color: #b98cff;
+  font-size: 14px;
+  line-height: 1;
+}
+
+#infinity-help-panel .ih-storm-heading > div {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+#infinity-help-panel .ih-storm-heading strong {
+  color: #e8ddff;
+  font-size: 8px;
+  letter-spacing: .3px;
+}
+
+#infinity-help-panel .ih-storm-heading small {
+  color: #887aa9;
+  font-size: 6px;
+}
+
+#infinity-help-panel .ih-storm-main {
+  margin-top: 6px;
+
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+#infinity-help-panel .ih-storm-main span {
+  color: #a999ce;
+  font-size: 7px;
+  font-weight: 700;
+}
+
+#infinity-help-panel .ih-storm-main strong {
+  color: #f1eaff;
+  font-size: 17px;
+  line-height: 1;
+  letter-spacing: .45px;
+
+  font-variant-numeric:
+    tabular-nums;
+}
+
+#infinity-help-panel .ih-storm-meta {
+  margin-top: 6px;
+
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 3px 8px;
+
+  color: #7f739e;
+  font-size: 6px;
+}
+
+#infinity-help-panel .ih-storm-meta strong {
+  color: #cfc4e9;
+  font-variant-numeric:
+    tabular-nums;
+}
+
+#infinity-help-panel
+.ih-storm-countdown.ih-storm-now {
+  border-color:
+    rgba(184, 128, 255, .55);
+
+  background:
+    linear-gradient(
+      120deg,
+      rgba(120, 68, 220, .18),
+      rgba(30, 35, 85, .22) 60%,
+      rgba(121, 63, 197, .14)
+    );
+}
+
+#infinity-help-panel
+.ih-storm-countdown.ih-storm-now
+.ih-storm-heading strong,
+#infinity-help-panel
+.ih-storm-countdown.ih-storm-now
+.ih-storm-main strong {
+  color: #ffffff;
 }
 
 
@@ -690,6 +827,22 @@
   font-size: 7px;
   font-weight: 800;
   letter-spacing: .35px;
+}
+
+#infinity-help-panel .ih-nature-arrow {
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+#infinity-help-panel .ih-nature-up {
+  color: #62e7a2;
+  text-shadow: 0 0 8px rgba(77, 226, 148, .34);
+}
+
+#infinity-help-panel .ih-nature-down {
+  color: #ff718f;
+  text-shadow: 0 0 8px rgba(255, 83, 121, .3);
 }
 
 #infinity-help-panel .ih-iv-card.ih-nature-card-up {
@@ -1273,6 +1426,112 @@
   display: none;
 }
 
+/* Organização segura das seções: o modo fica desligado por padrão. */
+#infinity-help-panel .ih-section-order-toolbar {
+  margin: 0 0 8px;
+  min-height: 25px;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+#infinity-help-panel .ih-section-order-hint {
+  margin-right: auto;
+
+  color: #657493;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: .45px;
+  text-transform: uppercase;
+}
+
+#infinity-help-panel .ih-section-order-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#infinity-help-panel .ih-section-order-toolbar button {
+  width: auto;
+  height: 24px;
+  min-width: 0;
+  padding: 0 8px;
+
+  border-radius: 7px;
+
+  color: #94a8cc;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+
+#infinity-help-panel .ih-section-order-reset {
+  display: none;
+}
+
+#infinity-help-panel.ih-organize-sections
+.ih-section-order-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#infinity-help-panel.ih-organize-sections
+.ih-section-order-toggle {
+  color: #dffbff;
+  border-color: rgba(69, 221, 255, .34);
+  background: rgba(0, 200, 255, .09);
+}
+
+#infinity-help-panel .ih-section-drag-handle {
+  display: none;
+  width: 25px;
+  height: 25px;
+  min-width: 25px;
+  padding: 0;
+
+  align-items: center;
+  justify-content: center;
+
+  border-color: rgba(145, 113, 255, .28);
+
+  color: #b9aaff;
+  background: rgba(119, 76, 255, .08);
+
+  cursor: grab;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: -2px;
+  line-height: 1;
+  touch-action: none;
+}
+
+#infinity-help-panel.ih-organize-sections
+.ih-section-drag-handle {
+  display: inline-flex;
+}
+
+#infinity-help-panel.ih-organize-sections
+.ih-section-toggle {
+  display: none;
+}
+
+#infinity-help-panel.ih-organize-sections
+.ih-section-card {
+  border-style: dashed;
+}
+
+#infinity-help-panel
+.ih-section-dragging {
+  opacity: .72;
+  transform: scale(.985);
+  box-shadow:
+    0 0 0 1px rgba(141, 105, 255, .22),
+    0 8px 22px rgba(0, 0, 0, .24);
+}
+
 #infinity-help-panel .ih-recommendation-card {
   border-color: rgba(83, 196, 255, .27);
 
@@ -1806,6 +2065,7 @@ tbody tr:last-child th {
   #infinity-help-panel .ih-card,
   #infinity-help-panel .ih-iv-card,
   #infinity-help-panel .ih-event-countdown,
+  #infinity-help-panel .ih-storm-countdown,
   #infinity-help-panel .ih-shiny-alert {
     box-shadow: none;
   }

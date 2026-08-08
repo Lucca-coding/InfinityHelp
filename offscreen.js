@@ -8,6 +8,19 @@ const AUDIO_FILES = {
 let currentAudio = null;
 
 
+function stopTone() {
+  if (!currentAudio) return true;
+
+  try {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+  } catch (_) {}
+
+  currentAudio = null;
+  return true;
+}
+
+
 async function playTone(kind) {
   const file =
     AUDIO_FILES[kind] ||
@@ -42,10 +55,18 @@ chrome.runtime.onMessage.addListener(
   (message, _sender, sendResponse) => {
     if (
       message?.target !==
-        'infinityHelpOffscreen' ||
-      message?.action !==
-        'playEventTone'
+        'infinityHelpOffscreen'
     ) {
+      return false;
+    }
+
+    if (message?.action === 'stopEventTone') {
+      stopTone();
+      sendResponse({ ok: true });
+      return false;
+    }
+
+    if (message?.action !== 'playEventTone') {
       return false;
     }
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "InfinityHelp",
-  "version": "0.2.8.23",
+  "version": "0.2.8.26",
   "description": "InfinityHelp com itens, TMs/HMs, alertas de evento, shiny e previsão de KO.",
   "permissions": [
     "storage",
